@@ -38,6 +38,7 @@ protected:
 private:
     void* mToken;
     H264CameraCaptureContext mCtx;
+    struct timeval mLastCapTime;
 };
 
 #endif

@@ -87,17 +87,19 @@ int H264CameraCaptureInit(H264CameraCaptureContext* ctx,
         goto cleanup;
     }
     /* put sample parameters */
-    ctx->H264EncCodecCtx->bit_rate = 400000;
+    ctx->H264EncCodecCtx->bit_rate = 0;
+    ctx->H264EncCodecCtx->codec_type = AVMEDIA_TYPE_VIDEO; 
     /* resolution must be a multiple of two */
     ctx->H264EncCodecCtx->width = width;
     ctx->H264EncCodecCtx->height = height;
+    //ctx->H264EncCodecCtx->frame_number = 1;
     /* frames per second */
-    ctx->H264EncCodecCtx->time_base= (AVRational){1, fps};
-    ctx->H264EncCodecCtx->gop_size = 10; /* emit one intra frame every ten frames */
-    ctx->H264EncCodecCtx->max_b_frames = 1;
+    ctx->H264EncCodecCtx->time_base = (AVRational){1, fps};
+    ctx->H264EncCodecCtx->gop_size = 1; /* emit one intra frame every ten frames */
+    ctx->H264EncCodecCtx->max_b_frames = 0;
     ctx->H264EncCodecCtx->pix_fmt = AV_PIX_FMT_YUV420P;
 
-    av_opt_set(ctx->H264EncCodecCtx->priv_data, "preset", "superfast", 0);
+    av_opt_set(ctx->H264EncCodecCtx->priv_data, "preset", "ultrafast", 0);
     av_opt_set(ctx->H264EncCodecCtx->priv_data, "tune", "zerolatency", 0);
 
     if (avcodec_open2(ctx->H264EncCodecCtx, ctx->H264EncCodec, NULL) < 0)  
@@ -181,6 +183,7 @@ cleanup:
     if (ctx->formatCtx)
     {
         avformat_close_input(&ctx->formatCtx);
+        avformat_free_context(ctx->formatCtx);
     }
 
     return ret;
@@ -189,6 +192,7 @@ cleanup:
 int H264CameraCapture(H264CameraCaptureContext* ctx, void** output, int* len)
 {
     int got_frame = 0, got_packet = 0;
+    double timeDiff;
 
     if (!ctx->ready)
     {
@@ -211,8 +215,10 @@ int H264CameraCapture(H264CameraCaptureContext* ctx, void** output, int* len)
 
     if (avcodec_decode_video2(ctx->rawDecCodecCtx, ctx->yuyv422Frame, &got_frame, ctx->rawPacket) < 0)
     {
+        av_free_packet(ctx->rawPacket);
         return H264_CAMERA_CAPTURE_ERROR_DECODE;
     }
+    av_free_packet(ctx->rawPacket);
     if (!got_frame)
     {
         return H264_CAMERA_CAPTURE_ERROR_GOTFRAME;
@@ -227,7 +233,18 @@ int H264CameraCapture(H264CameraCaptureContext* ctx, void** output, int* len)
     av_init_packet(ctx->H264Packet);
     ctx->H264Packet->data = ctx->outBuf;
     ctx->H264Packet->size = ctx->outLen;
-    ctx->H264Packet->pts = ctx->H264EncCodecCtx->frame_number;
+
+    gettimeofday(&ctx->capNowTime, NULL);
+    if (0 == ctx->H264EncCodecCtx->frame_number)
+    {
+        ctx->capStartTime = ctx->capNowTime;
+    }
+    timeDiff = ctx->capNowTime.tv_sec - ctx->capStartTime.tv_sec 
+        + 0.000001 * (ctx->capNowTime.tv_usec - ctx->capStartTime.tv_usec);
+    ctx->yuv420Frame->pts = 90000 * timeDiff;
+
+    //av_rescale_q(ctx->H264EncCodecCtx->frame_number, 
+    //        ctx->H264EncCodecCtx->time_base, ctx->H264EncCodecCtx->time_base);
 
     if (avcodec_encode_video2(ctx->H264EncCodecCtx, ctx->H264Packet, ctx->yuv420Frame, &got_packet) < 0)
     {
@@ -235,8 +252,25 @@ int H264CameraCapture(H264CameraCaptureContext* ctx, void** output, int* len)
     }
     if (!got_packet)
     {
-        return H264_CAMERA_CAPTURE_ERROR_GOTPACKET;
+        //if (avcodec_encode_video2(ctx->H264EncCodecCtx, ctx->H264Packet, NULL, &got_packet) < 0)
+        //{
+        //    return H264_CAMERA_CAPTURE_ERROR_ENCODE;
+        //}
+        //if (!got_packet)
+        //{
+            return H264_CAMERA_CAPTURE_ERROR_GOTPACKET;
+        //}
     }
+
+    if (ctx->H264Packet->pts != AV_NOPTS_VALUE)
+        ctx->H264Packet->pts = av_rescale_q(ctx->H264Packet->pts, ctx->H264EncCodecCtx->time_base, ctx->H264EncCodecCtx->time_base);
+    //ctx->H264Packet->dts = AV_NOPTS_VALUE;
+    //ctx->H264Packet->dts = av_rescale_q(ctx->H264Packet->dts, ctx->H264EncCodecCtx->time_base, ctx->H264EncCodecCtx->time_base);
+
+#ifdef IS_DEBUG
+    printf("Timebase: %llu\n", ctx->H264EncCodecCtx->time_base);
+    printf("After encode, PTS = %llu, DTS = %llu\n", ctx->H264Packet->pts, ctx->H264Packet->dts);
+#endif
 
     *output = ctx->H264Packet->data;
     *len = ctx->H264Packet->size;
@@ -294,6 +328,7 @@ void H264CameraCaptureClose(H264CameraCaptureContext* ctx)
     if (ctx->formatCtx)
     {
         avformat_close_input(&ctx->formatCtx);
+        avformat_free_context(ctx->formatCtx);
     }
 
     ctx->ready = 0;

@@ -45,25 +45,27 @@ int main(int argc, char** argv)
 	RTSPServer* rtspServer;
 	portNumBits rtspServerPortNum = 554;
 	rtspServer = RTSPServer::createNew(*env, rtspServerPortNum, authDB);
-	if (rtspServer == NULL) {
+	if (rtspServer == NULL) 
+    {
 		rtspServerPortNum = 8554;
 		rtspServer = RTSPServer::createNew(*env, rtspServerPortNum, authDB);
 	}
-	if (rtspServer == NULL) {
+	if (rtspServer == NULL) 
+    {
 		*env << "Failed to create RTSP server: " << env->getResultMsg() << "\n";
 		exit(1);
 	}
 
-	*env << "Camera Server " << "Version " << CAMERA_SERVER_VERSION_STRING << "\n";
+	*env << "Camera server " << CAMERA_SERVER_VERSION_STRING << ".\n";
 
     ServerMediaSession *sms = ServerMediaSession::createNew(*env, 
-        "webcam", 0, "Camera, streamed by the LIVE555 Media Server");   
+        "webcam", 0, "Camera server, streamed by the LIVE555 Media Server");   
     sms->addSubsession(H264CameraServerMediaSubsession::createNew(*env, 
         "/dev/video0", VIDEO_WIDTH, VIDEO_HEIGTH, FRAME_PER_SEC));  
     rtspServer->addServerMediaSession(sms);  
 
     char* url = rtspServer->rtspURL(sms);  
-    *env << "using url \"" << url << "\"\n";  
+    *env << "Using url \"" << url << "\"\n";  
     delete[] url; 
 
 	env->taskScheduler().doEventLoop(); // does not return

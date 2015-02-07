@@ -47,6 +47,7 @@ private:
     char* mAuxSDPLine;
     char mDoneFlag; // used when setting up "fAuxSDPLine"
     RTPSink* mDummyRTPSink; // ditto
+    char *mDevice;
     int mWidth;
     int mHeight;
     int mFps;

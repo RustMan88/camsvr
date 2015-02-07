@@ -61,6 +61,8 @@ typedef struct H264CameraCaptureContext
 
     struct SwsContext* swsCtx;
 
+    struct timeval capStartTime, capNowTime;
+
 } H264CameraCaptureContext;
 
 #ifdef __cplusplus

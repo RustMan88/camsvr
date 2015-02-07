@@ -31,7 +31,7 @@ H264CameraServerMediaSubsession::H264CameraServerMediaSubsession(UsageEnvironmen
       mAuxSDPLine(NULL), mDoneFlag(0), mDummyRTPSink(NULL),
       mWidth(width), mHeight(height), mFps(fps)
 {
-
+    mDevice = strDup(device);
 }
 
 H264CameraServerMediaSubsession::~H264CameraServerMediaSubsession()
@@ -39,6 +39,11 @@ H264CameraServerMediaSubsession::~H264CameraServerMediaSubsession()
     if (mAuxSDPLine)
     {
         delete[] mAuxSDPLine;
+    }
+
+    if (mDevice)
+    {
+        delete[] mDevice;
     }
 }
 
@@ -84,7 +89,7 @@ void H264CameraServerMediaSubsession::checkForAuxSDPLine1()
     else if (!mDoneFlag) 
     {
         // try again after a brief delay:
-        double delay = 1000.0 / mFps;  // ms  
+        double delay = 10;  // ms  
         int uSecsToDelay = delay * 1000;  // us  
         nextTask() = envir().taskScheduler().scheduleDelayedTask(uSecsToDelay,
             (TaskFunc*)checkForAuxSDPLine, this);
@@ -122,7 +127,7 @@ FramedSource* H264CameraServerMediaSubsession::createNewStreamSource(unsigned cl
 
     // Create the video source:
     H264CameraFramedSource* cameraSource = H264CameraFramedSource::createNew(envir(), 
-        "/dev/video0", mWidth, mHeight, mFps);
+        mDevice, mWidth, mHeight, mFps);
     if (cameraSource == NULL) return NULL;
 
     return H264VideoStreamFramer::createNew(envir(), cameraSource);

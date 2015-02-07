@@ -641,8 +641,8 @@ ac_subst_vars='am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
-DEBUG_FALSE
-DEBUG_TRUE
+IS_DEBUG_FALSE
+IS_DEBUG_TRUE
 EGREP
 GREP
 CPP
@@ -2362,6 +2362,12 @@ ac_config_headers="$ac_config_headers config.h"
 
 
 # Checks for programs.
+if test -z $CXXFLAGS; then
+    CXXFLAGS=''
+fi
+if test -z $CFLAGS; then
+    CFLAGS=''
+fi
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -4527,6 +4533,84 @@ _ACEOF
 fi
 
 
+{ $as_echo "$as_me:$LINENO: checking for pthread_create in -lpthread" >&5
+$as_echo_n "checking for pthread_create in -lpthread... " >&6; }
+if test "${ac_cv_lib_pthread_pthread_create+set}" = set; then
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lpthread  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char pthread_create ();
+int
+main ()
+{
+return pthread_create ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:$LINENO: $ac_try_echo\""
+$as_echo "$ac_try_echo") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext && {
+	 test "$cross_compiling" = yes ||
+	 $as_test_x conftest$ac_exeext
+       }; then
+  ac_cv_lib_pthread_pthread_create=yes
+else
+  $as_echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_lib_pthread_pthread_create=no
+fi
+
+rm -rf conftest.dSYM
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:$LINENO: result: $ac_cv_lib_pthread_pthread_create" >&5
+$as_echo "$ac_cv_lib_pthread_pthread_create" >&6; }
+if test "x$ac_cv_lib_pthread_pthread_create" = x""yes; then
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBPTHREAD 1
+_ACEOF
+
+  LIBS="-lpthread $LIBS"
+
+else
+  { $as_echo "$as_me:$LINENO: WARNING: libpthread.a is required" >&5
+$as_echo "$as_me: WARNING: libpthread.a is required" >&2;}
+fi
+
+
 # Checks for header files.
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -5491,25 +5575,47 @@ done
 # Check whether --enable-debug was given.
 if test "${enable_debug+set}" = set; then
   enableval=$enable_debug; case "${enableval}" in
-             yes) debug=true ;;
-             no)  debug=false ;;
-             *)   { { $as_echo "$as_me:$LINENO: error: bad value ${enableval} for --enable-debug" >&5
+	yes) IS_DEBUG=true ;;
+	no)  IS_DEBUG=false ;;
+	*) { { $as_echo "$as_me:$LINENO: error: bad value ${enableval} for --enable-debug" >&5
 $as_echo "$as_me: error: bad value ${enableval} for --enable-debug" >&2;}
    { (exit 1); exit 1; }; } ;;
 esac
 else
-  debug=false
+  IS_DEBUG=false
 fi
 
 
- if test x"$debug" = x"true"; then
-  DEBUG_TRUE=
-  DEBUG_FALSE='#'
+if test "$IS_DEBUG" = true
+then
+#	AC_DEFINE([IS_DEBUG], [1], [Debug])
+#	AC_SUBST([IS_DEBUG], [true])
+#	AC_SUBST([DEBUG_PREFIX], [])
+	 if true; then
+  IS_DEBUG_TRUE=
+  IS_DEBUG_FALSE='#'
 else
-  DEBUG_TRUE='#'
-  DEBUG_FALSE=
+  IS_DEBUG_TRUE='#'
+  IS_DEBUG_FALSE=
 fi
 
+	{ $as_echo "$as_me:$LINENO: debug mode is enable" >&5
+$as_echo "$as_me: debug mode is enable" >&6;}
+else
+#	AC_DEFINE([IS_DEBUG], [0], [Debug])
+#	AC_SUBST([IS_DEBUG], [false])
+#	AC_SUBST([DEBUG_PREFIX], [@])
+	 if false; then
+  IS_DEBUG_TRUE=
+  IS_DEBUG_FALSE='#'
+else
+  IS_DEBUG_TRUE='#'
+  IS_DEBUG_FALSE=
+fi
+
+	{ $as_echo "$as_me:$LINENO: debug mode is disable" >&5
+$as_echo "$as_me: debug mode is disable" >&6;}
+fi
 
 ac_config_files="$ac_config_files Makefile"
 
@@ -5639,10 +5745,17 @@ $as_echo "$as_me: error: conditional \"am__fastdepCC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
-if test -z "${DEBUG_TRUE}" && test -z "${DEBUG_FALSE}"; then
-  { { $as_echo "$as_me:$LINENO: error: conditional \"DEBUG\" was never defined.
+if test -z "${IS_DEBUG_TRUE}" && test -z "${IS_DEBUG_FALSE}"; then
+  { { $as_echo "$as_me:$LINENO: error: conditional \"IS_DEBUG\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
-$as_echo "$as_me: error: conditional \"DEBUG\" was never defined.
+$as_echo "$as_me: error: conditional \"IS_DEBUG\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${IS_DEBUG_TRUE}" && test -z "${IS_DEBUG_FALSE}"; then
+  { { $as_echo "$as_me:$LINENO: error: conditional \"IS_DEBUG\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+$as_echo "$as_me: error: conditional \"IS_DEBUG\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi

@@ -39,6 +39,7 @@ H264CameraFramedSource::H264CameraFramedSource(UsageEnvironment& env,
     H264CameraCaptureContext ctx)
     : FramedSource(env), mCtx(ctx)
 {
+    memset(&mLastCapTime, 0, sizeof(mLastCapTime));
 }
 
 H264CameraFramedSource::~H264CameraFramedSource()
@@ -49,9 +50,35 @@ H264CameraFramedSource::~H264CameraFramedSource()
 
 void H264CameraFramedSource::doGetNextFrame()
 {
-    double delay = 1000.0 / 25;
-    int uSecsToDelay = delay * 1000; 
-    mToken = envir().taskScheduler().scheduleDelayedTask(uSecsToDelay,
+    struct timeval nowTime;
+    int usDiff, usToDelay;
+    int usInterval = 1000000 / (mCtx.H264EncCodecCtx->time_base.den);
+
+    if ((mLastCapTime.tv_sec == 0) && (mLastCapTime.tv_usec == 0))
+    {
+        mToken = envir().taskScheduler().scheduleDelayedTask(0,
+            getNextFrame, this);
+        return;
+    }
+
+    gettimeofday(&nowTime, NULL);
+
+    usDiff = (nowTime.tv_sec - mLastCapTime.tv_sec) * 1000000 + (nowTime.tv_usec - mLastCapTime.tv_usec);
+
+    if (usDiff >= usInterval)
+    {
+//#ifdef IS_DEBUG
+        cout << "Duration: " << usDiff << "." << endl; 
+        cout << "___________________ Capture and encode time is too long." << endl;
+//#endif
+        usToDelay = 0;
+    }
+    else
+    {
+        usToDelay = usInterval - usDiff;
+    }
+    
+    mToken = envir().taskScheduler().scheduleDelayedTask(usToDelay,
         getNextFrame, this);
 }
 
@@ -65,25 +92,57 @@ void H264CameraFramedSource::getNextFrame1()
     void* outBuf = NULL;  
     int outLen = 0;
     int ret = 0;
+    
+    gettimeofday(&fPresentationTime, NULL);
+    mLastCapTime = fPresentationTime;
 
-    // capture and compress
-    do 
+//#ifdef IS_DEBUG
+    struct tm* ptm;
+    char time_string[40];
+    long milliseconds;
+
+    ptm = localtime (&fPresentationTime.tv_sec);
+    strftime (time_string, sizeof (time_string), "%Y-%m-%d %H:%M:%S", ptm);
+    milliseconds = fPresentationTime.tv_usec / 1000;
+    printf ("Presentation time: %s.%03ld\n", time_string, milliseconds);
+
+    int time_use = 0;
+    struct timeval start;
+    struct timeval end;
+    //struct timezone tz;
+
+    gettimeofday(&start, NULL);
+//#endif
+
+    ret = H264CameraCapture(&mCtx, &outBuf, &outLen);
+    if (H264_CAMERA_CAPTURE_SUCCESS != ret)
     {
-        ret = H264CameraCapture(&mCtx, &outBuf, &outLen);
-        if (H264_CAMERA_CAPTURE_SUCCESS == ret)
+        if (H264_CAMERA_CAPTURE_ERROR_GOTPACKET == ret)
         {
-            break;
+            doGetNextFrame();
         }
-    } 
-    while (H264_CAMERA_CAPTURE_ERROR_GOTPACKET == ret);
+        else 
+        {
+            printf("Camera capture error: %d\n", ret);
+        }
 
-    gettimeofday(&fPresentationTime, 0);
+        return;
+    }
+
+//#ifdef IS_DEBUG
+    gettimeofday(&end, NULL);
+    time_use = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_usec - start.tv_usec);
+    printf("Use time is %dus\n", time_use);
+//#endif
 
     fFrameSize = outLen;  
     if (fFrameSize > fMaxSize) 
     {  
         fNumTruncatedBytes = fFrameSize - fMaxSize;  
-        fFrameSize = fMaxSize;  
+        fFrameSize = fMaxSize; 
+#ifdef IS_DEBUG
+        printf("Number of truncated bytes: %d\n", fNumTruncatedBytes);
+#endif
     }  
     else 
     {  
