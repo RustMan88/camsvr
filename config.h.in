@@ -15,6 +15,9 @@
 /* Define to 1 if you have the <libavdevice/avdevice.h> header file. */
 #undef HAVE_LIBAVDEVICE_AVDEVICE_H
 
+/* Define to 1 if you have the `avfilter' library (-lavfilter). */
+#undef HAVE_LIBAVFILTER
+
 /* Define to 1 if you have the `avformat' library (-lavformat). */
 #undef HAVE_LIBAVFORMAT
 
@@ -23,6 +26,9 @@
 
 /* Define to 1 if you have the `avutil' library (-lavutil). */
 #undef HAVE_LIBAVUTIL
+
+/* Define to 1 if you have the `freetype' library (-lfreetype). */
+#undef HAVE_LIBFREETYPE
 
 /* Define to 1 if you have the `pthread' library (-lpthread). */
 #undef HAVE_LIBPTHREAD

@@ -17,14 +17,24 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 #include <stdio.h>
 #include "H264CameraCapture.h"
 
+#include <libavfilter/buffersrc.h>
+
+static char s_filterDesc[] 
+    = "drawtext=fontfile=/usr/share/fonts/default/Type1/n019003l.pfb:x=w-tw-5:y=5:fontcolor=white:fontsize=30:text=\\'%{localtime\\:%Y/%m/%d %H\\\\\\:%M\\\\\\:%S}\\'";
+
 int H264CameraCaptureInit(H264CameraCaptureContext* ctx, 
     const char* device, int width, int height, int fps)
 {
     int i, ret;
+    char args[512];
+    enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_YUYV422, AV_PIX_FMT_NONE }; 
+
     memset(ctx, 0, sizeof(H264CameraCaptureContext));
 
     av_register_all();
     avdevice_register_all(); 
+    avcodec_register_all();
+    avfilter_register_all();
 
     ctx->formatCtx = avformat_alloc_context();
     if (!ctx->formatCtx)
@@ -109,8 +119,9 @@ int H264CameraCaptureInit(H264CameraCaptureContext* ctx,
     }
 
     ctx->yuyv422Frame = av_frame_alloc();
+    ctx->yuyv422PlusTimeFrame = av_frame_alloc();
     ctx->yuv420Frame = av_frame_alloc();
-    if (!ctx->yuyv422Frame || !ctx->yuyv422Frame)
+    if (!ctx->yuyv422Frame || !ctx->yuyv422PlusTimeFrame || !ctx->yuyv422Frame)
     {
         ret = H264_CAMERA_CAPTURE_ERROR_ALLOCFRAME;
         goto cleanup;
@@ -128,6 +139,71 @@ int H264CameraCaptureInit(H264CameraCaptureContext* ctx,
     {
         ret = H264_CAMERA_CAPTURE_ERROR_ALLOCPACKET;
         goto cleanup;
+    }
+
+    ctx->filterGraph = avfilter_graph_alloc();
+    if (!ctx->filterGraph)
+    {
+        ret = H264_CAMERA_CAPTURE_ERROR_ALLOCGRAPH;
+        goto cleanup;
+    }
+
+    ctx->bufSrcFilter = avfilter_get_by_name("buffer");
+    ctx->bufSinkFilter = avfilter_get_by_name("ffbuffersink");
+    if (!ctx->bufSrcFilter || !ctx->bufSinkFilter)
+    {
+        ret = H264_CAMERA_CAPTURE_ERROR_GETFILTER;
+        goto cleanup;
+    }
+
+    ctx->inFilterInOut = avfilter_inout_alloc();
+    ctx->outFilterInOut = avfilter_inout_alloc();
+    if (!ctx->inFilterInOut || !ctx->outFilterInOut)
+    {
+        ret = H264_CAMERA_CAPTURE_ERROR_ALLOCINOUT;
+        goto cleanup;
+    }
+
+    snprintf(args, sizeof(args),  
+        "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:pixel_aspect=%d/%d",  
+        ctx->rawDecCodecCtx->width, ctx->rawDecCodecCtx->height, ctx->rawDecCodecCtx->pix_fmt,  
+        ctx->rawDecCodecCtx->time_base.num, ctx->rawDecCodecCtx->time_base.den,  
+        ctx->rawDecCodecCtx->sample_aspect_ratio.num, ctx->rawDecCodecCtx->sample_aspect_ratio.den);  
+
+    if (avfilter_graph_create_filter(&ctx->bufSrcFilterCtx, ctx->bufSrcFilter, "in", args, NULL, ctx->filterGraph) < 0)
+    {
+        ret = H264_CAMERA_CAPTURE_ERROR_CREATEFILTER;
+        goto cleanup;
+    }
+    if (avfilter_graph_create_filter(&ctx->bufSinkFilterCtx, ctx->bufSinkFilter, "out", NULL, NULL, ctx->filterGraph) < 0)
+    {
+        ret = H264_CAMERA_CAPTURE_ERROR_CREATEFILTER;
+        goto cleanup;
+    }
+
+    av_opt_set_int_list(ctx->bufSinkFilterCtx, "pix_fmts", pix_fmts,  
+        AV_PIX_FMT_NONE, AV_OPT_SEARCH_CHILDREN);
+
+    /* Endpoints for the filter graph. */
+    ctx->outFilterInOut->name = av_strdup("in");
+    ctx->outFilterInOut->filter_ctx = ctx->bufSrcFilterCtx;
+    ctx->outFilterInOut->pad_idx = 0;
+    ctx->outFilterInOut->next = NULL;
+
+    ctx->inFilterInOut->name = av_strdup("out");
+    ctx->inFilterInOut->filter_ctx = ctx->bufSinkFilterCtx;
+    ctx->inFilterInOut->pad_idx = 0;
+    ctx->inFilterInOut->next = NULL;
+
+    if (avfilter_graph_parse(ctx->filterGraph, s_filterDesc, 
+        ctx->inFilterInOut, ctx->outFilterInOut, NULL) < 0)
+    {
+        return H264_CAMERA_CAPTURE_ERROR_GRAPHPARSE;
+    }
+
+    if (avfilter_graph_config(ctx->filterGraph, NULL) < 0)
+    {
+        return H264_CAMERA_CAPTURE_ERROR_GRAPHCONFIG;
     }
 
     ctx->outLen = avpicture_get_size(ctx->H264EncCodecCtx->pix_fmt, ctx->H264EncCodecCtx->width, ctx->H264EncCodecCtx->height);
@@ -150,6 +226,21 @@ cleanup:
         av_free(ctx->outBuf);
     }
 
+    //if (ctx->inFilterInOut)
+    //{
+    //    avfilter_inout_free(&ctx->inFilterInOut);
+    //}
+
+    //if (ctx->outFilterInOut)
+    //{
+    //    avfilter_inout_free(&ctx->outFilterInOut);
+    //}
+
+    if (ctx->filterGraph)
+    {
+        avfilter_graph_free(&ctx->filterGraph);
+    }
+
     if (ctx->rawPacket)
     {
         av_free_packet(ctx->rawPacket); 
@@ -163,6 +254,11 @@ cleanup:
     if (ctx->yuv420Frame)
     {
         av_frame_free(&ctx->yuv420Frame);
+    }
+
+    if (ctx->yuyv422PlusTimeFrame)
+    {
+        av_frame_free(&ctx->yuyv422PlusTimeFrame);
     }
 
     if (ctx->yuyv422Frame)
@@ -224,7 +320,19 @@ int H264CameraCapture(H264CameraCaptureContext* ctx, void** output, int* len)
         return H264_CAMERA_CAPTURE_ERROR_GOTFRAME;
     }
 
-    if (sws_scale(ctx->swsCtx, (const uint8_t* const*)ctx->yuyv422Frame->data, ctx->yuyv422Frame->linesize, 
+    ctx->yuyv422Frame->pts = av_frame_get_best_effort_timestamp(ctx->yuyv422Frame);
+
+    if (av_buffersrc_add_frame_flags(ctx->bufSrcFilterCtx, ctx->yuyv422Frame, AV_BUFFERSRC_FLAG_KEEP_REF) < 0)
+    {
+        return H264_CAMERA_CAPTURE_ERROR_SRCADDFRAME;
+    }
+
+    if (av_buffersink_get_frame(ctx->bufSinkFilterCtx, ctx->yuyv422PlusTimeFrame) < 0)
+    {
+        return H264_CAMERA_CAPTURE_ERROR_SINKGETFRAME;
+    }
+
+    if (sws_scale(ctx->swsCtx, (const uint8_t* const*)ctx->yuyv422PlusTimeFrame->data, ctx->yuyv422PlusTimeFrame->linesize, 
         0, ctx->rawDecCodecCtx->height, ctx->yuv420Frame->data, ctx->yuv420Frame->linesize) < 0)
     {
         return H264_CAMERA_CAPTURE_ERROR_SCALE;
@@ -243,34 +351,19 @@ int H264CameraCapture(H264CameraCaptureContext* ctx, void** output, int* len)
         + 0.000001 * (ctx->capNowTime.tv_usec - ctx->capStartTime.tv_usec);
     ctx->yuv420Frame->pts = 90000 * timeDiff;
 
-    //av_rescale_q(ctx->H264EncCodecCtx->frame_number, 
-    //        ctx->H264EncCodecCtx->time_base, ctx->H264EncCodecCtx->time_base);
-
     if (avcodec_encode_video2(ctx->H264EncCodecCtx, ctx->H264Packet, ctx->yuv420Frame, &got_packet) < 0)
     {
         return H264_CAMERA_CAPTURE_ERROR_ENCODE;
     }
     if (!got_packet)
     {
-        //if (avcodec_encode_video2(ctx->H264EncCodecCtx, ctx->H264Packet, NULL, &got_packet) < 0)
-        //{
-        //    return H264_CAMERA_CAPTURE_ERROR_ENCODE;
-        //}
-        //if (!got_packet)
-        //{
-            return H264_CAMERA_CAPTURE_ERROR_GOTPACKET;
-        //}
+        return H264_CAMERA_CAPTURE_ERROR_GOTPACKET;
     }
 
     if (ctx->H264Packet->pts != AV_NOPTS_VALUE)
         ctx->H264Packet->pts = av_rescale_q(ctx->H264Packet->pts, ctx->H264EncCodecCtx->time_base, ctx->H264EncCodecCtx->time_base);
-    //ctx->H264Packet->dts = AV_NOPTS_VALUE;
-    //ctx->H264Packet->dts = av_rescale_q(ctx->H264Packet->dts, ctx->H264EncCodecCtx->time_base, ctx->H264EncCodecCtx->time_base);
-
-#ifdef IS_DEBUG
-    printf("Timebase: %llu\n", ctx->H264EncCodecCtx->time_base);
-    printf("After encode, PTS = %llu, DTS = %llu\n", ctx->H264Packet->pts, ctx->H264Packet->dts);
-#endif
+    if (ctx->H264Packet->dts != AV_NOPTS_VALUE)
+        ctx->H264Packet->dts = av_rescale_q(ctx->H264Packet->dts, ctx->H264EncCodecCtx->time_base, ctx->H264EncCodecCtx->time_base);
 
     *output = ctx->H264Packet->data;
     *len = ctx->H264Packet->size;
@@ -295,6 +388,21 @@ void H264CameraCaptureClose(H264CameraCaptureContext* ctx)
         av_free(ctx->outBuf);
     }
 
+    //if (ctx->inFilterInOut)
+    //{
+    //    avfilter_inout_free(&ctx->inFilterInOut);
+    //}
+
+    //if (ctx->outFilterInOut)
+    //{
+    //    avfilter_inout_free(&ctx->outFilterInOut);
+    //}
+
+    if (ctx->filterGraph)
+    {
+        avfilter_graph_free(&ctx->filterGraph);
+    }
+
     if (ctx->rawPacket)
     {
         av_free_packet(ctx->rawPacket); 
@@ -308,6 +416,11 @@ void H264CameraCaptureClose(H264CameraCaptureContext* ctx)
     if (ctx->yuv420Frame)
     {
         av_frame_free(&ctx->yuv420Frame);
+    }
+
+    if (ctx->yuyv422PlusTimeFrame)
+    {
+        av_frame_free(&ctx->yuyv422PlusTimeFrame);
     }
 
     if (ctx->yuyv422Frame)

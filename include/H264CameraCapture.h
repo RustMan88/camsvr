@@ -36,11 +36,21 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 #define H264_CAMERA_CAPTURE_ERROR_ALLOCPICTURE      -16
 #define H264_CAMERA_CAPTURE_ERROR_SCALE             -17
 #define H264_CAMERA_CAPTURE_ERROR_ALLOCPACKET       -18
+#define H264_CAMERA_CAPTURE_ERROR_ALLOCGRAPH        -19
+#define H264_CAMERA_CAPTURE_ERROR_GETFILTER         -20
+#define H264_CAMERA_CAPTURE_ERROR_ALLOCINOUT        -21
+#define H264_CAMERA_CAPTURE_ERROR_CREATEFILTER      -22
+#define H264_CAMERA_CAPTURE_ERROR_GRAPHPARSE        -23
+#define H264_CAMERA_CAPTURE_ERROR_GRAPHCONFIG       -24
+#define H264_CAMERA_CAPTURE_ERROR_SRCADDFRAME       -25
+#define H264_CAMERA_CAPTURE_ERROR_SINKGETFRAME      -26
+
 
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>  
 #include <libswscale/swscale.h>  
 #include <libavdevice/avdevice.h>
+#include <libavfilter/avfilter.h>
 
 typedef struct H264CameraCaptureContext
 {
@@ -53,9 +63,17 @@ typedef struct H264CameraCaptureContext
     AVCodec* rawDecCodec;
     AVCodec* H264EncCodec;
     AVFrame* yuyv422Frame;
+    AVFrame* yuyv422PlusTimeFrame;
     AVFrame* yuv420Frame;
     AVPacket* rawPacket;
     AVPacket* H264Packet;
+    AVFilterGraph* filterGraph;
+    AVFilterContext* bufSrcFilterCtx;
+    AVFilterContext* bufSinkFilterCtx;
+    AVFilter* bufSrcFilter;
+    AVFilter* bufSinkFilter;
+    AVFilterInOut* inFilterInOut;
+    AVFilterInOut* outFilterInOut;
     char* outBuf;
     int outLen;
 
