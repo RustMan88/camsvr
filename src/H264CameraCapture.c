@@ -242,12 +242,14 @@ cleanup:
 
     if (ctx->rawPacket)
     {
-        av_free_packet(ctx->rawPacket); 
+        av_free_packet(ctx->rawPacket);
+        av_free(ctx->rawPacket); 
     }
 
     if (ctx->H264Packet)
     {
-        av_free_packet(ctx->H264Packet); 
+        av_free_packet(ctx->H264Packet);
+        av_free(ctx->H264Packet);
     }
 
     if (ctx->yuv420Frame)
@@ -286,6 +288,7 @@ cleanup:
 
 int H264CameraCapture(H264CameraCaptureContext* ctx, void** output, int* len)
 {
+    int ret = 0;
     int got_frame = 0, got_packet = 0;
     double timeDiff;
 
@@ -300,41 +303,47 @@ int H264CameraCapture(H264CameraCaptureContext* ctx, void** output, int* len)
 
     if (av_read_frame(ctx->formatCtx, ctx->rawPacket) < 0)
     {
-        return H264_CAMERA_CAPTURE_ERROR_READFRAME;
+        ret = H264_CAMERA_CAPTURE_ERROR_READFRAME;
+        goto cleanup;
     }
 
     if (ctx->rawPacket->stream_index != ctx->videoIndex)  
     {
-        return H264_CAMERA_CAPTURE_ERROR_INVALIDVIDEOINDEX;
+        ret = H264_CAMERA_CAPTURE_ERROR_INVALIDVIDEOINDEX;
+        goto cleanup;
     }
 
     if (avcodec_decode_video2(ctx->rawDecCodecCtx, ctx->yuyv422Frame, &got_frame, ctx->rawPacket) < 0)
     {
-        av_free_packet(ctx->rawPacket);
-        return H264_CAMERA_CAPTURE_ERROR_DECODE;
+        ret = H264_CAMERA_CAPTURE_ERROR_DECODE;
+        goto cleanup;
     }
-    av_free_packet(ctx->rawPacket);
     if (!got_frame)
     {
-        return H264_CAMERA_CAPTURE_ERROR_GOTFRAME;
+        ret = H264_CAMERA_CAPTURE_ERROR_GOTFRAME;
+        goto cleanup;
     }
 
     ctx->yuyv422Frame->pts = av_frame_get_best_effort_timestamp(ctx->yuyv422Frame);
 
     if (av_buffersrc_add_frame_flags(ctx->bufSrcFilterCtx, ctx->yuyv422Frame, AV_BUFFERSRC_FLAG_KEEP_REF) < 0)
     {
-        return H264_CAMERA_CAPTURE_ERROR_SRCADDFRAME;
+        ret = H264_CAMERA_CAPTURE_ERROR_SRCADDFRAME;
+        goto cleanup;
     }
 
     if (av_buffersink_get_frame(ctx->bufSinkFilterCtx, ctx->yuyv422PlusTimeFrame) < 0)
     {
-        return H264_CAMERA_CAPTURE_ERROR_SINKGETFRAME;
+        ret = H264_CAMERA_CAPTURE_ERROR_SINKGETFRAME;
+        goto cleanup;
     }
+
 
     if (sws_scale(ctx->swsCtx, (const uint8_t* const*)ctx->yuyv422PlusTimeFrame->data, ctx->yuyv422PlusTimeFrame->linesize, 
         0, ctx->rawDecCodecCtx->height, ctx->yuv420Frame->data, ctx->yuv420Frame->linesize) < 0)
     {
-        return H264_CAMERA_CAPTURE_ERROR_SCALE;
+        ret = H264_CAMERA_CAPTURE_ERROR_SCALE;
+        goto cleanup;
     }
 
     av_init_packet(ctx->H264Packet);
@@ -352,11 +361,13 @@ int H264CameraCapture(H264CameraCaptureContext* ctx, void** output, int* len)
 
     if (avcodec_encode_video2(ctx->H264EncCodecCtx, ctx->H264Packet, ctx->yuv420Frame, &got_packet) < 0)
     {
-        return H264_CAMERA_CAPTURE_ERROR_ENCODE;
+        ret = H264_CAMERA_CAPTURE_ERROR_ENCODE;
+        goto cleanup;
     }
     if (!got_packet)
     {
-        return H264_CAMERA_CAPTURE_ERROR_GOTPACKET;
+        ret = H264_CAMERA_CAPTURE_ERROR_GOTPACKET;
+        goto cleanup;
     }
 
     if (ctx->H264Packet->pts != AV_NOPTS_VALUE)
@@ -367,7 +378,16 @@ int H264CameraCapture(H264CameraCaptureContext* ctx, void** output, int* len)
     *output = ctx->H264Packet->data;
     *len = ctx->H264Packet->size;
 
-    return H264_CAMERA_CAPTURE_SUCCESS;
+    ret = H264_CAMERA_CAPTURE_SUCCESS;
+
+cleanup:
+    av_free_packet(ctx->rawPacket);
+    av_frame_unref(ctx->yuyv422Frame);
+    av_frame_unref(ctx->yuyv422PlusTimeFrame);
+    av_frame_unref(ctx->yuv420Frame);
+    av_free_packet(ctx->H264Packet);
+    
+    return ret;
 }
 
 void H264CameraCaptureClose(H264CameraCaptureContext* ctx)
@@ -404,12 +424,14 @@ void H264CameraCaptureClose(H264CameraCaptureContext* ctx)
 
     if (ctx->rawPacket)
     {
-        av_free_packet(ctx->rawPacket); 
+        av_free_packet(ctx->rawPacket);
+        av_free(ctx->rawPacket);
     }
 
     if (ctx->H264Packet)
     {
-        av_free_packet(ctx->H264Packet); 
+        av_free_packet(ctx->H264Packet);
+        av_free(ctx->H264Packet);
     }
 
     if (ctx->yuv420Frame)
