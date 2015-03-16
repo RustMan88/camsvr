@@ -51,13 +51,14 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 #include <libswscale/swscale.h>  
 #include <libavdevice/avdevice.h>
 #include <libavfilter/avfilter.h>
+#include <libavfilter/buffersrc.h>
 
 typedef struct H264CameraCaptureContext
 {
     int ready;
-    int videoIndex;  
+    int videoIndex;
 
-    AVFormatContext* formatCtx;  
+    AVFormatContext* formatCtx;
     AVCodecContext* rawDecCodecCtx;
     AVCodecContext* H264EncCodecCtx;
     AVCodec* rawDecCodec;
@@ -80,7 +81,6 @@ typedef struct H264CameraCaptureContext
     struct SwsContext* swsCtx;
 
     struct timeval capStartTime, capNowTime;
-
 } H264CameraCaptureContext;
 
 #ifdef __cplusplus

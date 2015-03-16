@@ -17,7 +17,6 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 #include <stdio.h>
 #include "H264CameraCapture.h"
 
-#include <libavfilter/buffersrc.h>
 
 static char s_filterDesc[] 
     = "drawtext=fontfile=/usr/share/fonts/default/Type1/n019003l.pfb:x=w-tw-5:y=5:fontcolor=white:fontsize=30:text=\\'%{localtime\\:%Y/%m/%d %H\\\\\\:%M\\\\\\:%S}\\'";

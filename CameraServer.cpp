@@ -27,36 +27,36 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 
 int main(int argc, char** argv)
 {
-	// Begin by setting up our usage environment:
-	TaskScheduler* scheduler = BasicTaskScheduler::createNew();
-	UsageEnvironment* env = BasicUsageEnvironment::createNew(*scheduler);
+    // Begin by setting up our usage environment:
+    TaskScheduler* scheduler = BasicTaskScheduler::createNew();
+    UsageEnvironment* env = BasicUsageEnvironment::createNew(*scheduler);
 
-	UserAuthenticationDatabase* authDB = NULL;
+    UserAuthenticationDatabase* authDB = NULL;
 #ifdef ACCESS_CONTROL
-	// To implement client access control to the RTSP server, do the following:
-	authDB = new UserAuthenticationDatabase;
-	authDB->addUserRecord("username1", "password1"); // replace these with real strings
-	// Repeat the above with each <username>, <password> that you wish to allow
-	// access to the server.
+    // To implement client access control to the RTSP server, do the following:
+    authDB = new UserAuthenticationDatabase;
+    authDB->addUserRecord("username1", "password1"); // replace these with real strings
+    // Repeat the above with each <username>, <password> that you wish to allow
+    // access to the server.
 #endif
 
-	// Create the RTSP server.  Try first with the default port number (554),
-	// and then with the alternative port number (8554):
-	RTSPServer* rtspServer;
-	portNumBits rtspServerPortNum = 554;
-	rtspServer = RTSPServer::createNew(*env, rtspServerPortNum, authDB);
-	if (rtspServer == NULL) 
+    // Create the RTSP server.  Try first with the default port number (554),
+    // and then with the alternative port number (8554):
+    RTSPServer* rtspServer;
+    portNumBits rtspServerPortNum = 554;
+    rtspServer = RTSPServer::createNew(*env, rtspServerPortNum, authDB);
+    if (rtspServer == NULL) 
     {
-		rtspServerPortNum = 8554;
-		rtspServer = RTSPServer::createNew(*env, rtspServerPortNum, authDB);
-	}
-	if (rtspServer == NULL) 
+        rtspServerPortNum = 8554;
+        rtspServer = RTSPServer::createNew(*env, rtspServerPortNum, authDB);
+    }
+    if (rtspServer == NULL) 
     {
-		*env << "Failed to create RTSP server: " << env->getResultMsg() << "\n";
-		exit(1);
-	}
+        *env << "Failed to create RTSP server: " << env->getResultMsg() << "\n";
+        exit(1);
+    }
 
-	*env << "Camera server " << CAMERA_SERVER_VERSION_STRING << ".\n";
+    *env << "Camera server " << CAMERA_SERVER_VERSION_STRING << ".\n";
 
     ServerMediaSession *sms = ServerMediaSession::createNew(*env, 
         "webcam", 0, "Camera server, streamed by the LIVE555 Media Server");   
@@ -68,7 +68,7 @@ int main(int argc, char** argv)
     *env << "Using url \"" << url << "\"\n";  
     delete[] url; 
 
-	env->taskScheduler().doEventLoop(); // does not return
+    env->taskScheduler().doEventLoop(); // does not return
 
-	return 0; // only to prevent compiler warning
+    return 0; // only to prevent compiler warning
 }
