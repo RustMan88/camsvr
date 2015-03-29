@@ -44,6 +44,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 #define H264_CAMERA_CAPTURE_ERROR_GRAPHCONFIG       -24
 #define H264_CAMERA_CAPTURE_ERROR_SRCADDFRAME       -25
 #define H264_CAMERA_CAPTURE_ERROR_SINKGETFRAME      -26
+#define H264_CAMERA_CAPTURE_ERROR_ALLOCBUF			-27
 
 
 #include <libavcodec/avcodec.h>
@@ -75,6 +76,8 @@ typedef struct H264CameraCaptureContext
     AVFilter* bufSinkFilter;
     AVFilterInOut* inFilterInOut;
     AVFilterInOut* outFilterInOut;
+    char* inBuf;
+    int inLen;
     char* outBuf;
     int outLen;
 

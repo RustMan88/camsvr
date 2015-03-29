@@ -126,7 +126,9 @@ int H264CameraCaptureInit(H264CameraCaptureContext* ctx,
         goto cleanup;
     }
 
-    if (avpicture_alloc((AVPicture*)ctx->yuv420Frame, PIX_FMT_YUV420P, width, height) < 0)
+    if ((avpicture_alloc((AVPicture*)ctx->yuyv422Frame, PIX_FMT_YUYV422, width, height) < 0)
+    	|| (avpicture_alloc((AVPicture*)ctx->yuyv422PlusTimeFrame, PIX_FMT_YUYV422, width, height) < 0)
+    	|| (avpicture_alloc((AVPicture*)ctx->yuv420Frame, PIX_FMT_YUV420P, width, height) < 0))
     {   
         ret = H264_CAMERA_CAPTURE_ERROR_ALLOCPICTURE;
         goto cleanup;
@@ -197,16 +199,25 @@ int H264CameraCaptureInit(H264CameraCaptureContext* ctx,
     if (avfilter_graph_parse(ctx->filterGraph, s_filterDesc, 
         ctx->inFilterInOut, ctx->outFilterInOut, NULL) < 0)
     {
-        return H264_CAMERA_CAPTURE_ERROR_GRAPHPARSE;
+        ret = H264_CAMERA_CAPTURE_ERROR_GRAPHPARSE;
+        goto cleanup;
     }
 
     if (avfilter_graph_config(ctx->filterGraph, NULL) < 0)
     {
-        return H264_CAMERA_CAPTURE_ERROR_GRAPHCONFIG;
+        ret = H264_CAMERA_CAPTURE_ERROR_GRAPHCONFIG;
+        goto cleanup;
     }
 
+    ctx->inLen = avpicture_get_size(ctx->rawDecCodecCtx->pix_fmt, ctx->rawDecCodecCtx->width, ctx->rawDecCodecCtx->height);
+    ctx->inBuf = (char*)av_malloc(ctx->inLen);
     ctx->outLen = avpicture_get_size(ctx->H264EncCodecCtx->pix_fmt, ctx->H264EncCodecCtx->width, ctx->H264EncCodecCtx->height);
     ctx->outBuf = (char*)av_malloc(ctx->outLen);
+    if (!ctx->inBuf || !ctx->outBuf)
+    {
+    	ret = H264_CAMERA_CAPTURE_ERROR_ALLOCBUF;
+        goto cleanup;
+    }
 
     ctx->swsCtx = sws_getContext(ctx->rawDecCodecCtx->width, ctx->rawDecCodecCtx->height, 
         ctx->rawDecCodecCtx->pix_fmt, ctx->rawDecCodecCtx->width, ctx->rawDecCodecCtx->height, PIX_FMT_YUV420P, SWS_BICUBIC, NULL, NULL, NULL);  
@@ -223,6 +234,11 @@ cleanup:
     if (ctx->outBuf)
     {
         av_free(ctx->outBuf);
+    }
+    
+    if (ctx->inBuf)
+    {
+        av_free(ctx->inBuf);
     }
 
     //if (ctx->inFilterInOut)
@@ -298,8 +314,8 @@ int H264CameraCapture(H264CameraCaptureContext* ctx, void** output, int* len)
     }
 
     av_init_packet(ctx->rawPacket);
-    ctx->rawPacket->data = NULL;
-    ctx->rawPacket->size = 0;
+    ctx->rawPacket->data = ctx->inBuf;
+    ctx->rawPacket->size = ctx->inLen;
 
     if (av_read_frame(ctx->formatCtx, ctx->rawPacket) < 0)
     {
@@ -366,8 +382,16 @@ int H264CameraCapture(H264CameraCaptureContext* ctx, void** output, int* len)
     }
     if (!got_packet)
     {
-        ret = H264_CAMERA_CAPTURE_ERROR_GOTPACKET;
-        goto cleanup;
+    	if (avcodec_encode_video2(ctx->H264EncCodecCtx, ctx->H264Packet, NULL, &got_packet) < 0)
+	    {
+	        ret = H264_CAMERA_CAPTURE_ERROR_ENCODE;
+	        goto cleanup;
+	    }
+    	if (!got_packet)
+        {
+	        ret = H264_CAMERA_CAPTURE_ERROR_GOTPACKET;
+	        goto cleanup;
+	    }
     }
 
     if (ctx->H264Packet->pts != AV_NOPTS_VALUE)
@@ -384,7 +408,7 @@ cleanup:
     av_free_packet(ctx->rawPacket);
     av_frame_unref(ctx->yuyv422Frame);
     av_frame_unref(ctx->yuyv422PlusTimeFrame);
-    av_frame_unref(ctx->yuv420Frame);
+    //av_frame_unref(ctx->yuv420Frame);
     av_free_packet(ctx->H264Packet);
     
     return ret;
@@ -405,6 +429,11 @@ void H264CameraCaptureClose(H264CameraCaptureContext* ctx)
     if (ctx->outBuf)
     {
         av_free(ctx->outBuf);
+    }
+    
+    if (ctx->inBuf)
+    {
+        av_free(ctx->inBuf);
     }
 
     //if (ctx->inFilterInOut)

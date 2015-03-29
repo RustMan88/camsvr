@@ -82,7 +82,7 @@ void H264CameraFramedSource::doGetNextFrame()
         getNextFrame, this);
 }
 
-void H264CameraFramedSource::getNextFrame(void* ptr)  
+void H264CameraFramedSource::getNextFrame(void* ptr)
 {  
     ((H264CameraFramedSource*)ptr)->getNextFrame1();  
 } 
@@ -92,9 +92,11 @@ void H264CameraFramedSource::getNextFrame1()
     void* outBuf = NULL;  
     int outLen = 0;
     int ret = 0;
+    int usInterval = 1000000 / (mCtx.H264EncCodecCtx->time_base.den);
     
     gettimeofday(&fPresentationTime, NULL);
     mLastCapTime = fPresentationTime;
+    mLastCapTime.tv_usec = mLastCapTime.tv_usec / usInterval * usInterval;
 
 #ifdef IS_DEBUG
     struct tm* ptm;
