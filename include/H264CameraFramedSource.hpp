@@ -17,7 +17,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 #define _H264_CAMERA_FRAMED_SOURCE_HPP
 
 #include <liveMedia.hh>
-#include "H264CameraCapture.h"
+#include "H264CameraCaptureThread.hpp"
 
 class H264CameraFramedSource : public FramedSource
 {
@@ -29,16 +29,15 @@ public:
     void getNextFrame1();
 
 protected:
-    H264CameraFramedSource(UsageEnvironment& env, H264CameraCaptureContext ctx);
+    H264CameraFramedSource(UsageEnvironment& env, H264CameraCaptureThread* thread);
     ~H264CameraFramedSource();
 
-	virtual void doGetNextFrame();
+    virtual void doGetNextFrame();
     virtual unsigned int maxFrameSize() const; 
 
 private:
     void* mToken;
-    H264CameraCaptureContext mCtx;
-    struct timeval mLastCapTime;
+    H264CameraCaptureThread* mThread;
 };
 
 #endif

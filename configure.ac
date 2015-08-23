@@ -22,7 +22,7 @@ AC_CHECK_LIB(v4l2,v4l2_open,,AC_MSG_WARN(v4l2.a may be required for capture vide
 AC_CHECK_LIB(x264,x264_predict_16x16_init)
 AC_CHECK_LIB(avutil,av_malloc,,AC_MSG_WARN(libavutil.a may be required for MPEG streaming))
 AC_CHECK_LIB(avcodec,avcodec_register_all,,AC_MSG_WARN(libavcodec.a is required for MPEG streaming))
-AC_CHECK_LIB(avformat,av_new_stream,,AC_MSG_WARN(libavformat.a is required for MPEG streaming))
+AC_CHECK_LIB(avformat,avformat_new_stream,,AC_MSG_WARN(libavformat.a is required for MPEG streaming))
 AC_CHECK_LIB(avfilter,avfilter_get_by_name,,AC_MSG_WARN(libavfilter.a is required for MPEG streaming))
 AC_CHECK_LIB(avdevice,avdevice_register_all,,AC_MSG_WARN(libavdevice.a may be required for MPEG streaming))
 AC_CHECK_LIB(swscale,sws_scale,,,-lswscale)

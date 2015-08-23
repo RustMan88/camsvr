@@ -56,7 +56,7 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    *env << "Camera server " << CAMERA_SERVER_VERSION_STRING << ".\n";
+    *env << "Camera server version " << CAMERA_SERVER_VERSION_STRING << "\n";
 
     ServerMediaSession *sms = ServerMediaSession::createNew(*env, 
         "webcam", 0, "Camera server, streamed by the LIVE555 Media Server");   

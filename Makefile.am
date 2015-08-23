@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign  
 bin_PROGRAMS = camsvr  
-camsvr_SOURCES = CameraServer.cpp include/H264CameraCapture.h include/H264CameraFramedSource.hpp include/H264CameraServerMediaSubsession.hpp src/H264CameraCapture.c src/H264CameraFramedSource.cpp src/H264CameraServerMediaSubsession.cpp
+camsvr_SOURCES = CameraServer.cpp include/H264CameraCapture.h include/H264CameraCaptureThread.hpp include/H264CameraFramedSource.hpp include/H264CameraServerMediaSubsession.hpp src/H264CameraCapture.c src/H264CameraCaptureThread.cpp src/H264CameraFramedSource.cpp src/H264CameraServerMediaSubsession.cpp
 
 if IS_DEBUG
 AM_CFLAGS = -g3 -O0 -DIS_DEBUG

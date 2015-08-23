@@ -21,16 +21,16 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 class H264CameraServerMediaSubsession : public OnDemandServerMediaSubsession
 {
 public:
-	static H264CameraServerMediaSubsession* createNew(UsageEnvironment& env, 
-        const char* device, int width, int height, int fps);
+    static H264CameraServerMediaSubsession* createNew(UsageEnvironment& env, 
+    const char* device, int width, int height, int fps);
 
     void checkForAuxSDPLine1();
     void afterPlayingDummy1();
 
 protected:
-	H264CameraServerMediaSubsession(UsageEnvironment& env, 
+    H264CameraServerMediaSubsession(UsageEnvironment& env, 
         const char* device, int width, int height, int fps);
-	~H264CameraServerMediaSubsession();
+    ~H264CameraServerMediaSubsession();
 
     void setDoneFlag() { mDoneFlag = ~0; }
 

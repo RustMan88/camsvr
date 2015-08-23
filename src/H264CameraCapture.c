@@ -354,7 +354,6 @@ int H264CameraCapture(H264CameraCaptureContext* ctx, void** output, int* len)
         goto cleanup;
     }
 
-
     if (sws_scale(ctx->swsCtx, (const uint8_t* const*)ctx->yuyv422PlusTimeFrame->data, ctx->yuyv422PlusTimeFrame->linesize, 
         0, ctx->rawDecCodecCtx->height, ctx->yuv420Frame->data, ctx->yuv420Frame->linesize) < 0)
     {
@@ -380,6 +379,7 @@ int H264CameraCapture(H264CameraCaptureContext* ctx, void** output, int* len)
         ret = H264_CAMERA_CAPTURE_ERROR_ENCODE;
         goto cleanup;
     }
+
     if (!got_packet)
     {
     	if (avcodec_encode_video2(ctx->H264EncCodecCtx, ctx->H264Packet, NULL, &got_packet) < 0)
