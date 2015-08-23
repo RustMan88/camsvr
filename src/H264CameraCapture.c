@@ -229,16 +229,19 @@ cleanup:
     if (ctx->swsCtx)
     {
         sws_freeContext(ctx->swsCtx); 
+        ctx->swsCtx = NULL;
     }
 
     if (ctx->outBuf)
     {
         av_free(ctx->outBuf);
+        ctx->outBuf = NULL;
     }
     
     if (ctx->inBuf)
     {
         av_free(ctx->inBuf);
+        ctx->inBuf = NULL;
     }
 
     //if (ctx->inFilterInOut)
@@ -254,49 +257,58 @@ cleanup:
     if (ctx->filterGraph)
     {
         avfilter_graph_free(&ctx->filterGraph);
+        ctx->filterGraph = NULL;
     }
 
     if (ctx->rawPacket)
     {
         av_free_packet(ctx->rawPacket);
         av_free(ctx->rawPacket); 
+        ctx->rawPacket = NULL;
     }
 
     if (ctx->H264Packet)
     {
         av_free_packet(ctx->H264Packet);
         av_free(ctx->H264Packet);
+        ctx->H264Packet = NULL;
     }
 
     if (ctx->yuv420Frame)
     {
         av_frame_free(&ctx->yuv420Frame);
+        ctx->yuv420Frame = NULL;
     }
 
     if (ctx->yuyv422PlusTimeFrame)
     {
         av_frame_free(&ctx->yuyv422PlusTimeFrame);
+        ctx->yuyv422PlusTimeFrame = NULL;
     }
 
     if (ctx->yuyv422Frame)
     {
         av_frame_free(&ctx->yuyv422Frame);
+        ctx->yuyv422Frame = NULL;
     }
 
     if (ctx->H264EncCodecCtx)
     {
         avcodec_close(ctx->H264EncCodecCtx);
+        ctx->H264EncCodecCtx = NULL;
     }
     
     if (ctx->rawDecCodecCtx)
     {
         avcodec_close(ctx->rawDecCodecCtx);
+        ctx->rawDecCodecCtx = NULL;
     }
 
     if (ctx->formatCtx)
     {
         avformat_close_input(&ctx->formatCtx);
         avformat_free_context(ctx->formatCtx);
+        ctx->formatCtx = NULL;
     }
 
     return ret;
@@ -423,17 +435,20 @@ void H264CameraCaptureClose(H264CameraCaptureContext* ctx)
 
     if (ctx->swsCtx)
     {
-        sws_freeContext(ctx->swsCtx); 
+        sws_freeContext(ctx->swsCtx);
+        ctx->swsCtx = NULL;
     }
 
     if (ctx->outBuf)
     {
         av_free(ctx->outBuf);
+        ctx->outBuf = NULL;
     }
     
     if (ctx->inBuf)
     {
         av_free(ctx->inBuf);
+        ctx->inBuf = NULL;
     }
 
     //if (ctx->inFilterInOut)
@@ -449,49 +464,58 @@ void H264CameraCaptureClose(H264CameraCaptureContext* ctx)
     if (ctx->filterGraph)
     {
         avfilter_graph_free(&ctx->filterGraph);
+        ctx->filterGraph = NULL;
     }
 
     if (ctx->rawPacket)
     {
         av_free_packet(ctx->rawPacket);
         av_free(ctx->rawPacket);
+        ctx->rawPacket = NULL;
     }
 
     if (ctx->H264Packet)
     {
         av_free_packet(ctx->H264Packet);
         av_free(ctx->H264Packet);
+        ctx->H264Packet = NULL;
     }
 
     if (ctx->yuv420Frame)
     {
         av_frame_free(&ctx->yuv420Frame);
+        ctx->yuv420Frame = NULL;
     }
 
     if (ctx->yuyv422PlusTimeFrame)
     {
         av_frame_free(&ctx->yuyv422PlusTimeFrame);
+        ctx->yuyv422PlusTimeFrame = NULL;
     }
 
     if (ctx->yuyv422Frame)
     {
         av_frame_free(&ctx->yuyv422Frame);
+        ctx->yuyv422Frame = NULL;
     }
 
     if (ctx->H264EncCodecCtx)
     {
         avcodec_close(ctx->H264EncCodecCtx);
+        ctx->H264EncCodecCtx = NULL;
     }
 
     if (ctx->rawDecCodecCtx)
     {
         avcodec_close(ctx->rawDecCodecCtx);
+        ctx->rawDecCodecCtx = NULL;
     }
 
     if (ctx->formatCtx)
     {
         avformat_close_input(&ctx->formatCtx);
         avformat_free_context(ctx->formatCtx);
+        ctx->formatCtx = NULL;
     }
 
     ctx->ready = 0;
