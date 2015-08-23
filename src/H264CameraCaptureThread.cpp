@@ -38,8 +38,6 @@ bool H264CameraCaptureThread::Create(const char* device, int width, int height, 
         return false;
     }
 
-    printf("H264CameraCaptureInit\n");
-
     memset(&mCtx, 0, sizeof(mCtx));
     if (H264_CAMERA_CAPTURE_SUCCESS != H264CameraCaptureInit(&mCtx, device, width, height, fps))
     {
@@ -162,9 +160,7 @@ void H264CameraCaptureThread::CaptureProc()
     pthread_cond_wait(&mCondThread, &mLockThread);
     pthread_mutex_unlock(&mLockThread);
 
-    printf("Capture Start...\n");
     ret = H264CameraCapture(&mCtx, &outBuf, &outLen);
-    printf("Capture End...\n");
     if (H264_CAMERA_CAPTURE_SUCCESS == ret)
     {
         int frameSize = outLen;
