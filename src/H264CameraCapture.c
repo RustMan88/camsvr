@@ -19,7 +19,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 
 
 static char s_filterDesc[] 
-    = "drawtext=fontfile=/usr/share/fonts/default/Type1/n019003l.pfb:x=w-tw-5:y=5:fontcolor=white:fontsize=30:text=\\'%{localtime\\:%Y/%m/%d %H\\\\\\:%M\\\\\\:%S}\\'";
+= "drawtext=fontfile=/usr/share/fonts/default/Type1/n019003l.pfb:x=5:y=5:shadowx=2:shadowy=1:fontcolor=white:shadowcolor=black:fontsize=30:text=\\'%{localtime\\:%Y/%m/%d %H\\\\\\:%M\\\\\\:%S}\\'";
 
 int H264CameraCaptureInit(H264CameraCaptureContext* ctx, 
     const char* device, int width, int height, int fps)
