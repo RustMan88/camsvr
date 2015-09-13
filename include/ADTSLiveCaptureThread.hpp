@@ -13,19 +13,19 @@ You should have received a copy of the GNU Lesser General Public License
 along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
-#ifndef _ADTS_MICROPHONE_CAPTURE_THREAD_HPP
-#define _ADTS_MICROPHONE_CAPTURE_THREAD_HPP
+#ifndef _ADTS_LIVE_CAPTURE_THREAD_HPP
+#define _ADTS_LIVE_CAPTURE_THREAD_HPP
 
 #include <pthread.h>
-#include "ADTSMicrophoneCapture.h"
+#include "ADTSLiveCapture.h"
 
 #define ADTS_MAX_FRAME_SIZE (100 * 1024)
 
-class ADTSMicrophoneCaptureThread
+class ADTSLiveCaptureThread
 {
 public:
-    ADTSMicrophoneCaptureThread();
-    ~ADTSMicrophoneCaptureThread();
+    ADTSLiveCaptureThread();
+    ~ADTSLiveCaptureThread();
 
     bool Create(const char* device, int sampleRate, int channels);
     void Destroy();
@@ -35,11 +35,11 @@ public:
 
     bool GetExitFlag();
 
-    static void* ADTSMicrophoneCaptureProc(void* ptr);
+    static void* ADTSLiveCaptureProc(void* ptr);
     void CaptureProc();
 
 private:
-    ADTSMicrophoneCaptureContext mCtx;
+    ADTSLiveCaptureContext mCtx;
     bool mRunning;
     bool mExitFlag;
     pthread_t mThread;

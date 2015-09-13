@@ -13,19 +13,19 @@ You should have received a copy of the GNU Lesser General Public License
 along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
-#ifndef _H264_CAMERA_CAPTURE_THREAD_HPP
-#define _H264_CAMERA_CAPTURE_THREAD_HPP
+#ifndef _H264_LIVE_CAPTURE_THREAD_HPP
+#define _H264_LIVE_CAPTURE_THREAD_HPP
 
 #include <pthread.h>
-#include "H264CameraCapture.h"
+#include "H264LiveCapture.h"
 
 #define H264_MAX_FRAME_SIZE (100 * 1024)
 
-class H264CameraCaptureThread
+class H264LiveCaptureThread
 {
 public:
-    H264CameraCaptureThread();
-    ~H264CameraCaptureThread();
+    H264LiveCaptureThread();
+    ~H264LiveCaptureThread();
 
     bool Create(const char* device, int width, int height, int fps);
     void Destroy();
@@ -35,11 +35,11 @@ public:
 
     bool GetExitFlag();
 
-    static void* H264CameraCaptureProc(void* ptr);
+    static void* H264LiveCaptureProc(void* ptr);
     void CaptureProc();
 
 private:
-    H264CameraCaptureContext mCtx;
+    H264LiveCaptureContext mCtx;
     bool mRunning;
     bool mExitFlag;
     pthread_t mThread;

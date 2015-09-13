@@ -13,24 +13,24 @@ You should have received a copy of the GNU Lesser General Public License
 along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
-#ifndef _H264_CAMERA_SERVER_MEDIA_SUBSESSION_HPP
-#define _H264_CAMERA_SERVER_MEDIA_SUBSESSION_HPP
+#ifndef _H264_LIVE_SERVER_MEDIA_SUBSESSION_HPP
+#define _H264_LIVE_SERVER_MEDIA_SUBSESSION_HPP
 
 #include <liveMedia.hh>
 
-class H264CameraServerMediaSubsession : public OnDemandServerMediaSubsession
+class H264LiveServerMediaSubsession : public OnDemandServerMediaSubsession
 {
 public:
-    static H264CameraServerMediaSubsession* createNew(UsageEnvironment& env, 
+    static H264LiveServerMediaSubsession* createNew(UsageEnvironment& env, 
     const char* device, int width, int height, int fps);
 
     void checkForAuxSDPLine1();
     void afterPlayingDummy1();
 
 protected:
-    H264CameraServerMediaSubsession(UsageEnvironment& env, 
+    H264LiveServerMediaSubsession(UsageEnvironment& env, 
         const char* device, int width, int height, int fps);
-    ~H264CameraServerMediaSubsession();
+    ~H264LiveServerMediaSubsession();
 
     void setDoneFlag() { mDoneFlag = ~0; }
 

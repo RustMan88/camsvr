@@ -14,48 +14,43 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
-#include "ADTSMicrophoneServerMediaSubsession.hh"
-#include "ADTSMicrophoneSource.hh"
+#include "ADTSLiveServerMediaSubsession.hpp"
+#include "ADTSLiveFramedSource.hpp"
 #include "MPEG4GenericRTPSink.hh"
 
-ADTSMicrophoneServerMediaSubsession*
-ADTSMicrophoneServerMediaSubsession::createNew(UsageEnvironment& env, const char* device) 
-{
-  return new ADTSMicrophoneServerMediaSubsession(env, device);
+ADTSLiveServerMediaSubsession* ADTSLiveServerMediaSubsession::createNew(UsageEnvironment& env, 
+    const char* device, int sampleRate, int channels) 
+{printf("%s: %d.\n", __FILE__, __LINE__);
+  return new ADTSLiveServerMediaSubsession(env, device, sampleRate, channels);
 }
 
-ADTSMicrophoneServerMediaSubsession
-::ADTSMicrophoneServerMediaSubsession(UsageEnvironment& env, const char* device)
-  : OnDemandServerMediaSubsession(env, True)
-{
+ADTSLiveServerMediaSubsession::ADTSLiveServerMediaSubsession(UsageEnvironment& env, 
+    const char* device, int sampleRate, int channels)
+    : OnDemandServerMediaSubsession(env, True), mSampleRate(sampleRate), mChannels(channels)
+{printf("%s: %d.\n", __FILE__, __LINE__);
     mDevice = strDup(device);
 }
 
-ADTSMicrophoneServerMediaSubsession
-::~ADTSMicrophoneServerMediaSubsession() 
-{
-    if (mAuxSDPLine)
-    {
-        delete[] mAuxSDPLine;
-    }
-
+ADTSLiveServerMediaSubsession
+::~ADTSLiveServerMediaSubsession() 
+{printf("%s: %d.\n", __FILE__, __LINE__);
     if (mDevice)
     {
         delete[] mDevice;
     }
 }
 
-FramedSource* ADTSMicrophoneServerMediaSubsession::createNewStreamSource(unsigned /*clientSessionId*/, unsigned& estBitrate) 
-{
+FramedSource* ADTSLiveServerMediaSubsession::createNewStreamSource(unsigned /*clientSessionId*/, unsigned& estBitrate) 
+{printf("%s: %d.\n", __FILE__, __LINE__);
     estBitrate = 96; // kbps, estimate
 
-    return ADTSMicrophoneSource::createNew(envir(), fFileName);
+    return ADTSLiveFramedSource::createNew(envir(), mDevice, mSampleRate, mChannels);
 }
 
-RTPSink* ADTSMicrophoneServerMediaSubsession::createNewRTPSink(Groupsock* rtpGroupsock, 
+RTPSink* ADTSLiveServerMediaSubsession::createNewRTPSink(Groupsock* rtpGroupsock, 
     unsigned char rtpPayloadTypeIfDynamic, FramedSource* inputSource) 
-{
-    ADTSMicrophoneSource* adtsSource = (ADTSMicrophoneSource*)inputSource;
+{printf("%s: %d.\n", __FILE__, __LINE__);
+    ADTSLiveFramedSource* adtsSource = (ADTSLiveFramedSource*)inputSource;
     return MPEG4GenericRTPSink::createNew(envir(), rtpGroupsock,
 					rtpPayloadTypeIfDynamic,
 					adtsSource->samplingFrequency(),

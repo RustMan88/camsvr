@@ -14,7 +14,8 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
-#include "H264CameraServerMediaSubsession.hpp"
+#include "H264LiveServerMediaSubsession.hpp"
+#include "ADTSLiveServerMediaSubsession.hpp"
 #include <BasicUsageEnvironment.hh>
 #include <liveMedia.hh>
 #include <string.h>
@@ -24,6 +25,9 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 #define VIDEO_WIDTH     640
 #define VIDEO_HEIGTH    480
 #define FRAME_PER_SEC   25.0
+
+#define AUDIO_SAMPLE_RATE   44100
+#define AUDIO_NUM_CHANNEL   2
 
 int main(int argc, char** argv)
 {
@@ -60,8 +64,10 @@ int main(int argc, char** argv)
 
     ServerMediaSession *sms = ServerMediaSession::createNew(*env, 
         "webcam", 0, "Camera server, streamed by the LIVE555 Media Server");   
-    sms->addSubsession(H264CameraServerMediaSubsession::createNew(*env, 
-        "/dev/video0", VIDEO_WIDTH, VIDEO_HEIGTH, FRAME_PER_SEC));  
+    sms->addSubsession(H264LiveServerMediaSubsession::createNew(*env, 
+        "/dev/video0", VIDEO_WIDTH, VIDEO_HEIGTH, FRAME_PER_SEC)); 
+    sms->addSubsession(ADTSLiveServerMediaSubsession::createNew(*env,
+        "hw:0,0", AUDIO_SAMPLE_RATE, AUDIO_NUM_CHANNEL));
     rtspServer->addServerMediaSession(sms);  
 
     char* url = rtspServer->rtspURL(sms);  

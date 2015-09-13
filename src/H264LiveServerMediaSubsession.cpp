@@ -14,18 +14,18 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 #include <iostream>
-#include "H264CameraServerMediaSubsession.hpp"
-#include "H264CameraFramedSource.hpp"
+#include "H264LiveServerMediaSubsession.hpp"
+#include "H264LiveFramedSource.hpp"
 
 using namespace std;
 
-H264CameraServerMediaSubsession* H264CameraServerMediaSubsession::createNew(UsageEnvironment& env, 
+H264LiveServerMediaSubsession* H264LiveServerMediaSubsession::createNew(UsageEnvironment& env, 
     const char* device, int width, int height, int fps)
 {
-    return new H264CameraServerMediaSubsession(env, device, width, height, fps);
+    return new H264LiveServerMediaSubsession(env, device, width, height, fps);
 }
 
-H264CameraServerMediaSubsession::H264CameraServerMediaSubsession(UsageEnvironment& env, 
+H264LiveServerMediaSubsession::H264LiveServerMediaSubsession(UsageEnvironment& env, 
     const char* device, int width, int height, int fps)
     : OnDemandServerMediaSubsession(env, True),
       mAuxSDPLine(NULL), mDoneFlag(0), mDummyRTPSink(NULL),
@@ -34,7 +34,7 @@ H264CameraServerMediaSubsession::H264CameraServerMediaSubsession(UsageEnvironmen
     mDevice = strDup(device);
 }
 
-H264CameraServerMediaSubsession::~H264CameraServerMediaSubsession()
+H264LiveServerMediaSubsession::~H264LiveServerMediaSubsession()
 {
     if (mAuxSDPLine)
     {
@@ -49,11 +49,11 @@ H264CameraServerMediaSubsession::~H264CameraServerMediaSubsession()
 
 static void afterPlayingDummy(void* clientData) 
 {
-    H264CameraServerMediaSubsession* subsess = (H264CameraServerMediaSubsession*)clientData;
+    H264LiveServerMediaSubsession* subsess = (H264LiveServerMediaSubsession*)clientData;
     subsess->afterPlayingDummy1();
 }
 
-void H264CameraServerMediaSubsession::afterPlayingDummy1() 
+void H264LiveServerMediaSubsession::afterPlayingDummy1() 
 {
     // Unschedule any pending 'checking' task:
     envir().taskScheduler().unscheduleDelayedTask(nextTask());
@@ -63,11 +63,11 @@ void H264CameraServerMediaSubsession::afterPlayingDummy1()
 
 static void checkForAuxSDPLine(void* clientData) 
 {
-    H264CameraServerMediaSubsession* subsess = (H264CameraServerMediaSubsession*)clientData;
+    H264LiveServerMediaSubsession* subsess = (H264LiveServerMediaSubsession*)clientData;
     subsess->checkForAuxSDPLine1();
 }
 
-void H264CameraServerMediaSubsession::checkForAuxSDPLine1() 
+void H264LiveServerMediaSubsession::checkForAuxSDPLine1() 
 {
     char const* dasl;
 
@@ -96,7 +96,7 @@ void H264CameraServerMediaSubsession::checkForAuxSDPLine1()
     }
 }
 
-char const* H264CameraServerMediaSubsession::getAuxSDPLine(RTPSink* rtpSink, FramedSource* inputSource) 
+char const* H264LiveServerMediaSubsession::getAuxSDPLine(RTPSink* rtpSink, FramedSource* inputSource) 
 {
     if (mAuxSDPLine != NULL) return mAuxSDPLine; // it's already been set up (for a previous client)
 
@@ -121,19 +121,19 @@ char const* H264CameraServerMediaSubsession::getAuxSDPLine(RTPSink* rtpSink, Fra
     return mAuxSDPLine;
 }
 
-FramedSource* H264CameraServerMediaSubsession::createNewStreamSource(unsigned clientSessionId, unsigned& estBitrate)
+FramedSource* H264LiveServerMediaSubsession::createNewStreamSource(unsigned clientSessionId, unsigned& estBitrate)
 {
     estBitrate = 500;  
 
     // Create the video source:
-    H264CameraFramedSource* cameraSource = H264CameraFramedSource::createNew(envir(), 
+    H264LiveFramedSource* cameraSource = H264LiveFramedSource::createNew(envir(), 
         mDevice, mWidth, mHeight, mFps);
     if (cameraSource == NULL) return NULL;
 
     return H264VideoStreamFramer::createNew(envir(), cameraSource);
 }
 
-RTPSink* H264CameraServerMediaSubsession::createNewRTPSink(Groupsock* rtpGroupsock, unsigned char rtpPayloadTypeIfDynamic, FramedSource* inputSource)
+RTPSink* H264LiveServerMediaSubsession::createNewRTPSink(Groupsock* rtpGroupsock, unsigned char rtpPayloadTypeIfDynamic, FramedSource* inputSource)
 {
     return H264VideoRTPSink::createNew(envir(), rtpGroupsock, rtpPayloadTypeIfDynamic);
 }

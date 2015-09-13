@@ -15,14 +15,14 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include <iostream>
-#include "H264CameraFramedSource.hpp"
+#include "H264LiveFramedSource.hpp"
 
 using namespace std;
 
-H264CameraFramedSource* H264CameraFramedSource::createNew(UsageEnvironment& env, 
+H264LiveFramedSource* H264LiveFramedSource::createNew(UsageEnvironment& env, 
     const char* device, int width, int height, int fps)
 {
-    H264CameraCaptureThread* thread = new H264CameraCaptureThread();
+    H264LiveCaptureThread* thread = new H264LiveCaptureThread();
     if (NULL == thread)
     {
         return NULL;
@@ -34,35 +34,35 @@ H264CameraFramedSource* H264CameraFramedSource::createNew(UsageEnvironment& env,
         return NULL;
     }
 
-    H264CameraFramedSource* newSource = new H264CameraFramedSource(env, thread);
+    H264LiveFramedSource* newSource = new H264LiveFramedSource(env, thread);
 
     return newSource;
 }
 
-H264CameraFramedSource::H264CameraFramedSource(UsageEnvironment& env, 
-    H264CameraCaptureThread* thread)
+H264LiveFramedSource::H264LiveFramedSource(UsageEnvironment& env, 
+    H264LiveCaptureThread* thread)
     : FramedSource(env), mThread(thread)
 {
 }
 
-H264CameraFramedSource::~H264CameraFramedSource()
+H264LiveFramedSource::~H264LiveFramedSource()
 {
     mThread->Destroy();
     envir().taskScheduler().unscheduleDelayedTask(mToken);
 }
 
-void H264CameraFramedSource::doGetNextFrame()
+void H264LiveFramedSource::doGetNextFrame()
 { 
     mToken = envir().taskScheduler().scheduleDelayedTask(0,
         getNextFrame, this);
 }
 
-void H264CameraFramedSource::getNextFrame(void* ptr)
+void H264LiveFramedSource::getNextFrame(void* ptr)
 {  
-    ((H264CameraFramedSource*)ptr)->getNextFrame1();  
+    ((H264LiveFramedSource*)ptr)->getNextFrame1();  
 } 
 
-void H264CameraFramedSource::getNextFrame1()
+void H264LiveFramedSource::getNextFrame1()
 {
     int frameSize, truncatedSize;
 
@@ -75,7 +75,7 @@ void H264CameraFramedSource::getNextFrame1()
     afterGetting(this); 
 }
 
-unsigned int H264CameraFramedSource::maxFrameSize() const
+unsigned int H264LiveFramedSource::maxFrameSize() const
 {
     return H264_MAX_FRAME_SIZE;
 }

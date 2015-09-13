@@ -13,31 +13,42 @@ You should have received a copy of the GNU Lesser General Public License
 along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
-#ifndef _H264_CAMERA_FRAMED_SOURCE_HPP
-#define _H264_CAMERA_FRAMED_SOURCE_HPP
+#ifndef _ADTS_LIVE_SOURCE_HPP
+#define _ADTS_LIVE_SOURCE_HPP
 
 #include <liveMedia.hh>
-#include "H264CameraCaptureThread.hpp"
+#include "ADTSLiveCaptureThread.hpp"
 
-class H264CameraFramedSource : public FramedSource
+class ADTSLiveFramedSource: public FramedSource
 {
 public:
-    static H264CameraFramedSource* createNew(UsageEnvironment& env, 
-        const char* device, int width, int height, int fps);
+    static ADTSLiveFramedSource* createNew(UsageEnvironment& env,
+				       const char* device, int sampleRate, int channels);
 
     static void getNextFrame(void* ptr);
     void getNextFrame1();
 
-protected:
-    H264CameraFramedSource(UsageEnvironment& env, H264CameraCaptureThread* thread);
-    ~H264CameraFramedSource();
+    unsigned samplingFrequency() const { return fSamplingFrequency; }
+    unsigned numChannels() const { return fNumChannels; }
+    char const* configStr() const { return fConfigStr; }
+    // returns the 'AudioSpecificConfig' for this stream (in ASCII form)
 
+protected:
+    ADTSLiveFramedSource(UsageEnvironment& env, ADTSLiveCaptureThread* thread, 
+        int samplingFrequency, int numChannels);
+	// called only by createNew()
+    virtual ~ADTSLiveFramedSource();
+
+    // redefined virtual functions:
     virtual void doGetNextFrame();
-    virtual unsigned int maxFrameSize() const; 
 
 private:
     void* mToken;
-    H264CameraCaptureThread* mThread;
+    ADTSLiveCaptureThread* mThread;
+    unsigned fSamplingFrequency;
+    unsigned fNumChannels;
+    unsigned fuSecsPerFrame;
+    char fConfigStr[5];
 };
 
 #endif

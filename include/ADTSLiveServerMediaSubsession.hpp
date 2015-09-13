@@ -13,37 +13,34 @@ You should have received a copy of the GNU Lesser General Public License
 along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
-#ifndef _ADTS_MICROPHONE_SERVER_MEDIA_SUBSESSION_HPP
-#define _ADTS_MICROPHONE_SERVER_MEDIA_SUBSESSION_HPP
+#ifndef _ADTS_LIVE_SERVER_MEDIA_SUBSESSION_HPP
+#define _ADTS_LIVE_SERVER_MEDIA_SUBSESSION_HPP
 
 #include <liveMedia.hh>
 
-class ADTSMicrophoneServerMediaSubsession: public OnDemandServerMediaSubsession
+class ADTSLiveServerMediaSubsession: public OnDemandServerMediaSubsession
 {
 public:
-    static ADTSMicrophoneServerMediaSubsession* createNew(UsageEnvironment& env, const char* device);
+    static ADTSLiveServerMediaSubsession* createNew(UsageEnvironment& env, 
+        const char* device, int sampleRate, int channels);
 
 protected:
-    ADTSMicrophoneServerMediaSubsession(UsageEnvironment& env, const char* device);
+    ADTSLiveServerMediaSubsession(UsageEnvironment& env, 
+        const char* device, int sampleRate, int channels);
     // called only by createNew();
-    virtual ~ADTSMicrophoneServerMediaSubsession();
+    virtual ~ADTSLiveServerMediaSubsession();
 
     // redefined virtual functions
-    void setDoneFlag() { mDoneFlag = ~0; }
-
-    virtual char const* getAuxSDPLine(RTPSink* rtpSink,
-        FramedSource* inputSource);
     virtual FramedSource* createNewStreamSource(unsigned clientSessionId,
         unsigned& estBitrate);
-    // "estBitrate" is the stream's estimated bitrate, in kbps
     virtual RTPSink* createNewRTPSink(Groupsock* rtpGroupsock,
         unsigned char rtpPayloadTypeIfDynamic,
         FramedSource* inputSource);
 
 private:
-    char* mAuxSDPLine;
-    char mDoneFlag; // used when setting up "fAuxSDPLine"
-    RTPSink* mDummyRTPSink; // ditto
+    char *mDevice;
+    int mSampleRate;
+    int mChannels;
 };
 
 #endif

@@ -15,23 +15,23 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include <iostream>
-#include "H264CameraCaptureThread.hpp"
+#include "H264LiveCaptureThread.hpp"
 
 using namespace std;
 
-H264CameraCaptureThread::H264CameraCaptureThread()
+H264LiveCaptureThread::H264LiveCaptureThread()
     : mRunning(false), mExitFlag(false), mFrameBufLen(0), mTruncatedLen(0)
 {
     memset(&mCtx, 0, sizeof(mCtx));
     memset(mFrameBuf, 0, sizeof(mFrameBuf));
 }
 
-H264CameraCaptureThread::~H264CameraCaptureThread()
+H264LiveCaptureThread::~H264LiveCaptureThread()
 {
 
 }
 
-bool H264CameraCaptureThread::Create(const char* device, int width, int height, int fps)
+bool H264LiveCaptureThread::Create(const char* device, int width, int height, int fps)
 {
     if (mRunning)
     {
@@ -39,32 +39,32 @@ bool H264CameraCaptureThread::Create(const char* device, int width, int height, 
     }
 
     memset(&mCtx, 0, sizeof(mCtx));
-    if (H264_CAMERA_CAPTURE_SUCCESS != H264CameraCaptureInit(&mCtx, device, width, height, fps))
+    if (H264_LIVE_CAPTURE_SUCCESS != H264LiveCaptureInit(&mCtx, device, width, height, fps))
     {
         return false;
     }
 
     if (0 != pthread_cond_init(&mCondThread, NULL))
     {
-        H264CameraCaptureClose(&mCtx);
+        H264LiveCaptureClose(&mCtx);
         return false;
     }
 
     if (0 != pthread_mutex_init(&mLockThread, NULL))
     {
-        H264CameraCaptureClose(&mCtx);
+        H264LiveCaptureClose(&mCtx);
         return false;
     }
 
     if (0 != pthread_mutex_init(&mLockBuf, NULL))
     {
-        H264CameraCaptureClose(&mCtx);
+        H264LiveCaptureClose(&mCtx);
         return false;
     }
 
-    if (0 != pthread_create(&mThread, NULL, H264CameraCaptureThread::H264CameraCaptureProc, this))
+    if (0 != pthread_create(&mThread, NULL, H264LiveCaptureThread::H264LiveCaptureProc, this))
     {
-        H264CameraCaptureClose(&mCtx);
+        H264LiveCaptureClose(&mCtx);
         return false;
     }
 
@@ -75,7 +75,7 @@ bool H264CameraCaptureThread::Create(const char* device, int width, int height, 
     return true;
 }
 
-void H264CameraCaptureThread::Destroy()
+void H264LiveCaptureThread::Destroy()
 {
     if (mRunning)
     {
@@ -88,13 +88,13 @@ void H264CameraCaptureThread::Destroy()
         pthread_mutex_destroy(&mLockThread);
         pthread_cond_destroy(&mCondThread);
 
-        H264CameraCaptureClose(&mCtx);
+        H264LiveCaptureClose(&mCtx);
         
         mRunning = false;
     }
 }
 
-void H264CameraCaptureThread::Capture()
+void H264LiveCaptureThread::Capture()
 {
     int ret;
     void* outBuf = NULL;  
@@ -108,7 +108,7 @@ void H264CameraCaptureThread::Capture()
     pthread_cond_signal(&mCondThread);
 }
 
-void H264CameraCaptureThread::Export(void* buf, int len, int* frameLen, int* truncatedLen)
+void H264LiveCaptureThread::Export(void* buf, int len, int* frameLen, int* truncatedLen)
 {
     int exportLen = mFrameBufLen;
 
@@ -128,14 +128,14 @@ void H264CameraCaptureThread::Export(void* buf, int len, int* frameLen, int* tru
     pthread_mutex_unlock(&mLockBuf);
 }
 
-bool H264CameraCaptureThread::GetExitFlag()
+bool H264LiveCaptureThread::GetExitFlag()
 {
     return mExitFlag;
 }
 
-void* H264CameraCaptureThread::H264CameraCaptureProc(void* ptr)
+void* H264LiveCaptureThread::H264LiveCaptureProc(void* ptr)
 {
-    H264CameraCaptureThread* thread = (H264CameraCaptureThread*)ptr;
+    H264LiveCaptureThread* thread = (H264LiveCaptureThread*)ptr;
 
     while (1)
     {
@@ -150,7 +150,7 @@ void* H264CameraCaptureThread::H264CameraCaptureProc(void* ptr)
     pthread_exit(NULL);
 }
 
-void H264CameraCaptureThread::CaptureProc()
+void H264LiveCaptureThread::CaptureProc()
 {
     int ret;
     void* outBuf = NULL;  
@@ -160,8 +160,8 @@ void H264CameraCaptureThread::CaptureProc()
     pthread_cond_wait(&mCondThread, &mLockThread);
     pthread_mutex_unlock(&mLockThread);
 
-    ret = H264CameraCapture(&mCtx, &outBuf, &outLen);
-    if (H264_CAMERA_CAPTURE_SUCCESS == ret)
+    ret = H264LiveCapture(&mCtx, &outBuf, &outLen);
+    if (H264_LIVE_CAPTURE_SUCCESS == ret)
     {
         int frameSize = outLen;
         int truncatedSize = 0;

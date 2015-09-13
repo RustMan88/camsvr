@@ -15,59 +15,59 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include <iostream>
-#include "ADTSMicrophoneCaptureThread.hpp"
+#include "ADTSLiveCaptureThread.hpp"
 
 using namespace std;
 
-ADTSMicrophoneCaptureThread::ADTSMicrophoneCaptureThread()
+ADTSLiveCaptureThread::ADTSLiveCaptureThread()
     : mRunning(false), mExitFlag(false), mFrameBufLen(0), mTruncatedLen(0)
-{
+{printf("%s: %d.\n", __FILE__, __LINE__);
     memset(&mCtx, 0, sizeof(mCtx));
     memset(mFrameBuf, 0, sizeof(mFrameBuf));
 }
 
-ADTSMicrophoneCaptureThread::~ADTSMicrophoneCaptureThread()
+ADTSLiveCaptureThread::~ADTSLiveCaptureThread()
 {
-
+printf("%s: %d.\n", __FILE__, __LINE__);
 }
 
-bool ADTSMicrophoneCaptureThread::Create(const char* device, int sampleRate, int channels)
-{
+bool ADTSLiveCaptureThread::Create(const char* device, int sampleRate, int channels)
+{printf("%s: %d.\n", __FILE__, __LINE__);
     if (mRunning)
     {
         return false;
     }
-
+printf("%s: %d.\n", __FILE__, __LINE__);
     memset(&mCtx, 0, sizeof(mCtx));
-    if (ADTS_MICROPHONE_CAPTURE_SUCCESS != ADTSMicrophoneCaptureInit(&mCtx, device, sampleRate, channels))
+    if (ADTS_LIVE_CAPTURE_SUCCESS != ADTSLiveCaptureInit(&mCtx, device, sampleRate, channels))
     {
         return false;
     }
-
+printf("%s: %d.\n", __FILE__, __LINE__);
     if (0 != pthread_cond_init(&mCondThread, NULL))
     {
-        ADTSMicrophoneCaptureClose(&mCtx);
+        ADTSLiveCaptureClose(&mCtx);
         return false;
     }
-
+printf("%s: %d.\n", __FILE__, __LINE__);
     if (0 != pthread_mutex_init(&mLockThread, NULL))
     {
-        ADTSMicrophoneCaptureClose(&mCtx);
+        ADTSLiveCaptureClose(&mCtx);
         return false;
     }
-
+printf("%s: %d.\n", __FILE__, __LINE__);
     if (0 != pthread_mutex_init(&mLockBuf, NULL))
     {
-        ADTSMicrophoneCaptureClose(&mCtx);
+        ADTSLiveCaptureClose(&mCtx);
         return false;
     }
-
-    if (0 != pthread_create(&mThread, NULL, ADTSMicrophoneCaptureThread::ADTSMicrophoneCaptureProc, this))
+printf("%s: %d.\n", __FILE__, __LINE__);
+    if (0 != pthread_create(&mThread, NULL, ADTSLiveCaptureThread::ADTSLiveCaptureProc, this))
     {
-        ADTSMicrophoneCaptureClose(&mCtx);
+        ADTSLiveCaptureClose(&mCtx);
         return false;
     }
-
+printf("%s: %d.\n", __FILE__, __LINE__);
     mRunning = true;
 
     Capture();
@@ -75,10 +75,10 @@ bool ADTSMicrophoneCaptureThread::Create(const char* device, int sampleRate, int
     return true;
 }
 
-void ADTSMicrophoneCaptureThread::Destroy()
-{
+void ADTSLiveCaptureThread::Destroy()
+{printf("%s: %d.\n", __FILE__, __LINE__);
     if (mRunning)
-    {
+    {printf("%s: %d.\n", __FILE__, __LINE__);
         mExitFlag = true;
         pthread_cond_signal(&mCondThread);
 
@@ -87,29 +87,29 @@ void ADTSMicrophoneCaptureThread::Destroy()
         pthread_mutex_destroy(&mLockBuf);
         pthread_mutex_destroy(&mLockThread);
         pthread_cond_destroy(&mCondThread);
-
-        ADTSMicrophoneCaptureClose(&mCtx);
-        
+printf("%s: %d.\n", __FILE__, __LINE__);
+        ADTSLiveCaptureClose(&mCtx);
+printf("%s: %d.\n", __FILE__, __LINE__);
         mRunning = false;
     }
 }
 
-void ADTSMicrophoneCaptureThread::Capture()
+void ADTSLiveCaptureThread::Capture()
 {
     int ret;
     void* outBuf = NULL;  
     int outLen = 0;
-
+printf("%s: %d.\n", __FILE__, __LINE__);
     if (!mRunning)
     {
         return;
     }
-
+printf("%s: %d.\n", __FILE__, __LINE__);
     pthread_cond_signal(&mCondThread);
 }
 
-void ADTSMicrophoneCaptureThread::Export(void* buf, int len, int* frameLen, int* truncatedLen)
-{
+void ADTSLiveCaptureThread::Export(void* buf, int len, int* frameLen, int* truncatedLen)
+{printf("%s: %d.\n", __FILE__, __LINE__);
     int exportLen = mFrameBufLen;
 
     pthread_mutex_lock(&mLockBuf);
@@ -124,19 +124,19 @@ void ADTSMicrophoneCaptureThread::Export(void* buf, int len, int* frameLen, int*
     }
     memcpy(buf, mFrameBuf, exportLen);
     *frameLen = exportLen;
-
+printf("%s: %d.\n", __FILE__, __LINE__);
     pthread_mutex_unlock(&mLockBuf);
 }
 
-bool ADTSMicrophoneCaptureThread::GetExitFlag()
+bool ADTSLiveCaptureThread::GetExitFlag()
 {
     return mExitFlag;
 }
 
-void* ADTSMicrophoneCaptureThread::ADTSMicrophoneCaptureProc(void* ptr)
+void* ADTSLiveCaptureThread::ADTSLiveCaptureProc(void* ptr)
 {
-    ADTSMicrophoneCaptureThread* thread = (ADTSMicrophoneCaptureThread*)ptr;
-
+    ADTSLiveCaptureThread* thread = (ADTSLiveCaptureThread*)ptr;
+printf("%s: %d.\n", __FILE__, __LINE__);
     while (1)
     {
         if (thread->GetExitFlag())
@@ -146,22 +146,22 @@ void* ADTSMicrophoneCaptureThread::ADTSMicrophoneCaptureProc(void* ptr)
 
         thread->CaptureProc();
     }
-
+printf("%s: %d.\n", __FILE__, __LINE__);
     pthread_exit(NULL);
 }
 
-void ADTSMicrophoneCaptureThread::CaptureProc()
+void ADTSLiveCaptureThread::CaptureProc()
 {
     int ret;
     void* outBuf = NULL;  
     int outLen = 0;
-
+printf("%s: %d.\n", __FILE__, __LINE__);
     pthread_mutex_lock(&mLockThread);
     pthread_cond_wait(&mCondThread, &mLockThread);
     pthread_mutex_unlock(&mLockThread);
-
-    ret = ADTSMicrophoneCapture(&mCtx, &outBuf, &outLen);
-    if (ADTS_MICROPHONE_CAPTURE_SUCCESS == ret)
+printf("%s: %d.\n", __FILE__, __LINE__);
+    ret = ADTSLiveCapture(&mCtx, &outBuf, &outLen);
+    if (ADTS_LIVE_CAPTURE_SUCCESS == ret)
     {
         int frameSize = outLen;
         int truncatedSize = 0;
@@ -169,8 +169,8 @@ void ADTSMicrophoneCaptureThread::CaptureProc()
         {
             truncatedSize = frameSize - sizeof(mFrameBuf);
             frameSize = sizeof(mFrameBuf); 
-        }  
-
+        }
+printf("%s: %d.\n", __FILE__, __LINE__);
         pthread_mutex_lock(&mLockBuf);
         memcpy(mFrameBuf, outBuf, frameSize);
         mFrameBufLen = frameSize;
@@ -178,7 +178,7 @@ void ADTSMicrophoneCaptureThread::CaptureProc()
         pthread_mutex_unlock(&mLockBuf);
     }
     else
-    {
+    {printf("%s: %d.\n", __FILE__, __LINE__);
         pthread_mutex_lock(&mLockBuf);
         mFrameBufLen = 0;
         mTruncatedLen = 0;
